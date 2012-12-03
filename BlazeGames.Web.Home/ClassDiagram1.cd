@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="BlazeGames.Web.BlazeGames_CodeCompiler" Collapsed="true">
+    <Position X="6" Y="2.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAEA=</HashCode>
+      <FileName>Core\BlazeGames_CodeCompiler.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web._default" Collapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAAAAgAAIAIAAAAAAAAAAACBAAAAIAAAA=</HashCode>
+      <FileName>default.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.CodePage" Collapsed="true">
+    <Position X="1.25" Y="4.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACCAAAAQACAAAAABiChgAAACAABAAADAAAAI=</HashCode>
+      <FileName>Core\CodePage.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.ErrorManager" Collapsed="true">
+    <Position X="2.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAQAACQAAAAACCAAAAAEAABAAIAAEAAA=</HashCode>
+      <FileName>Core\ErrorManager.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Forum" Collapsed="true">
+    <Position X="4.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AkAAgAACAAAIgAAABAAAAQAAAAAAACAEABAAAAEAAAA=</HashCode>
+      <FileName>Core\Forum.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Thread" Collapsed="true">
+    <Position X="4.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAQAAAAgCAAAAAAAAEADAAAAhAAABAAAAkIAAA=</HashCode>
+      <FileName>Core\Forum.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Post" Collapsed="true">
+    <Position X="4.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACgIAAAAAAgDAAAEAAAAEAAgAgAAAAABAEAAEAAAA=</HashCode>
+      <FileName>Core\Forum.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.HttpHeader" Collapsed="true">
+    <Position X="6" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAAAAEAgEAAAAACAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Core\HttpHeader.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Logging" Collapsed="true">
+    <Position X="4.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAACAAAAABACAABAAAAABAAAAAAAAA=</HashCode>
+      <FileName>Core\Logging.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Member" Collapsed="true">
+    <Position X="2.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AGChgMQABCAEgAAqCEhAEIMKAFIIAEAQIBOQBSiAAZo=</HashCode>
+      <FileName>Core\Member.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Page" Collapsed="true">
+    <Position X="0.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQgIAgAABAwCQAAAAgAACQAgEQAGAACBhEAEEAAEA=</HashCode>
+      <FileName>Core\Page.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlazeGames.Web.Core.Utilities" Collapsed="true">
+    <Position X="0.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEIAAAEAABFAAgAEAAQCQBCAoAEACBxAAIAQAAAAAA=</HashCode>
+      <FileName>Core\Utilities.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

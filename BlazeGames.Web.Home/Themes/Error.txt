@@ -1,0 +1,10 @@
+﻿<style type='text/css'>
+	#main
+	{
+		clear: both;
+		background-color: <!--{BackgroundColor}-->;
+		border-color: <!--{BorderColor}-->;
+		color: <!--{ForegroundColor}-->;
+	}
+</style>
+<!--{Message}-->
