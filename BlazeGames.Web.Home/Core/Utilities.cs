@@ -152,27 +152,32 @@ namespace BlazeGames.Web.Core
             return HttpC;
         }
 
-        public static string CodeMirror(string Name, string Code, string Mode)
+        public static string CodeMirror(string Name, string Code, string Mode, bool CodeCheck = true, string Theme = "lesser-dark")
         {
-            return "<style>#contents{ width:900px; } .container{ width:900px; } #sidebar{ display:none; } .Err_Highlight{ color: red; text-decoration:underline; }</style>" + @"<textarea id='" + Name + @"' cols=""120"" rows=""50"">" + Utilities.Encode(Code) + @"</textarea>
+            string Return = "<style>.boxcontainer{ width:880px; } #contents{ width:900px; } .container{ width:900px; } #sidebar{ display:none; } .Err_Highlight{ color: red; text-decoration:underline; }</style>" + @"<textarea id='" + Name + @"' cols=""120"" rows=""50"">" + Utilities.Encode(Code) + @"</textarea>
 <script>
-    var editor" + @" = CodeMirror.fromTextArea(document.getElementById('" + Name + @"'), {
+    var editor" + Name + @" = CodeMirror.fromTextArea(document.getElementById('" + Name + @"'), {
     indentUnit: 4,
     indentWithTabs: true,
     lineNumbers: true,
     matchBrackets: true,
     mode: '" + Mode + @"',
-    theme: ""lesser-dark"",
+    theme: '" + Theme + @"',
     fixedGutter: true,
-    onChange: function(cm, ln) {
-       Edited();
-       CheckCodeThread('" + Mode + @"');
-    },
+    onChange: function(cm, ln)
+    {
+       Edited();";
+
+            if(CodeCheck)
+                Return += @"CheckCodeThread('" + Mode + @"');";
+
+            Return += @"},
     onGutterClick: function(cm, n) {
         scrollTo(n, 0);
     },
     extraKeys: {
-            ""F11"": function(cm) {
+            ""F11"": function(cm)
+            {
               setFullScreen(cm, !isFullScreen(cm));
             },
             ""F5"": function()
@@ -196,16 +201,21 @@ namespace BlazeGames.Web.Core
             }
         }
     });
+        
+    $(editor" + Name + @".getScrollerElement()).attr({ CodeMirrorVar: '" + Name + @"' });
 
     CodeMirror.connect(window, ""resize"", function()
     {
-          var showing = document.body.getElementsByClassName(""CodeMirror-fullscreen"")[0];
-          if (!showing) return;
-          showing.CodeMirror.getScrollerElement().style.height = winHeight() + ""px"";
-    });
+        var showing = document.body.getElementsByClassName(""CodeMirror-fullscreen"")[0];
+        if (!showing) return;
+            showing.CodeMirror.getScrollerElement().style.height = winHeight() + ""px"";
+    });";
 
-    init(editor);
-</script>";
+                Return += @"init_" + Name + @"(editor" + Name + @");";
+        
+            Return += "</script>";
+
+            return Return;
         }
 
         public static string CountryList(string Name)
@@ -215,7 +225,7 @@ namespace BlazeGames.Web.Core
 
         public static string CountryList(string Name, string Selected)
         {
-            string ret = "<select name='" + Name + "' class='dropdown' style=\"width: 200px;\">";
+            string ret = "<select id='" + Name + "' name='" + Name + "' class='dropdown' style=\"width: 200px;\">";
 
             foreach (string Country in Countries)
             {

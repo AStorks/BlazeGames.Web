@@ -119,7 +119,31 @@ namespace BlazeGames.Web.Core
         {
             this.SqlConnection = SqlConnection;
 
-            MySqlCommand MemberLoadQuery = new MySqlCommand("SELECT ID FROM members WHERE LoginName=@Account OR Email=@Account", SqlConnection);
+            string SqlQuery = "SELECT ID FROM members WHERE LoginName=@Account OR Email=@Account";
+
+            MySqlCommand MemberLoadQuery = new MySqlCommand(SqlQuery, SqlConnection);
+            MemberLoadQuery.Parameters.AddWithValue("@Account", Account);
+            using (MySqlDataReader MemberLoadReader = MemberLoadQuery.ExecuteReader())
+            {
+                if (MemberLoadReader.Read())
+                    this.ID = MemberLoadReader.GetInt32("ID");
+                else
+                    this.ID = 0;
+            }
+
+            this.Load();
+        }
+
+        public Member(string Account, MySqlConnection SqlConnection, bool Nickname)
+        {
+            this.SqlConnection = SqlConnection;
+
+            string SqlQuery = "SELECT ID FROM members WHERE LoginName=@Account OR Email=@Account";
+
+            if (Nickname)
+                SqlQuery = "SELECT ID FROM members WHERE Nickname=@Account";
+
+            MySqlCommand MemberLoadQuery = new MySqlCommand(SqlQuery, SqlConnection);
             MemberLoadQuery.Parameters.AddWithValue("@Account", Account);
             using (MySqlDataReader MemberLoadReader = MemberLoadQuery.ExecuteReader())
             {
@@ -160,12 +184,12 @@ namespace BlazeGames.Web.Core
             MemberSaveQuery.Parameters.AddWithValue("@GlobalSession", this.GlobalSession);
             MemberSaveQuery.Parameters.AddWithValue("@PIN", this.PIN);
             MemberSaveQuery.Parameters.AddWithValue("@ID", this.ID);
-            MemberSaveQuery.Parameters.AddWithValue("@LinkedDevices", String.Join(",", this.LinkedDevices.ToArray()));
+            MemberSaveQuery.Parameters.AddWithValue("@LinkedDevices", String.Join(",", this.LinkedDevices.Distinct().ToArray()));
             MemberSaveQuery.Parameters.AddWithValue("@MobileNotifications", MobileNotifications);
             MemberSaveQuery.Parameters.AddWithValue("@EmailNotifications", EmailNotifications);
-            MemberSaveQuery.Parameters.AddWithValue("@PendingFriends", String.Join(",", this.PendingFriends.ToArray()));
-            MemberSaveQuery.Parameters.AddWithValue("@BlockedFriends", String.Join(",", this.BlockedFriends.ToArray()));
-            MemberSaveQuery.Parameters.AddWithValue("@Friends", String.Join(",", this.Friends.ToArray()));
+            MemberSaveQuery.Parameters.AddWithValue("@PendingFriends", String.Join(",", this.PendingFriends.Distinct().ToArray()));
+            MemberSaveQuery.Parameters.AddWithValue("@BlockedFriends", String.Join(",", this.BlockedFriends.Distinct().ToArray()));
+            MemberSaveQuery.Parameters.AddWithValue("@Friends", String.Join(",", this.Friends.Distinct().ToArray()));
 
             MemberSaveQuery.ExecuteNonQuery();
         }
@@ -235,11 +259,11 @@ namespace BlazeGames.Web.Core
                     this.Authority = MemberLoadReader.GetInt32("Authority");
                     this.Cash = MemberLoadReader.GetInt32("Cash");
 
-                    this.LinkedDevices.AddRange(MemberLoadReader.GetString("LinkedDevices").Split(','));
+                    this.LinkedDevices = MemberLoadReader.GetString("LinkedDevices").Split(',').Distinct().ToList();
 
-                    this.PendingFriends.AddRange(MemberLoadReader.GetString("PendingFriends").Split(','));
-                    this.BlockedFriends.AddRange(MemberLoadReader.GetString("BlockedFriends").Split(','));
-                    this.Friends.AddRange(MemberLoadReader.GetString("Friends").Split(','));
+                    this.PendingFriends = MemberLoadReader.GetString("PendingFriends").Split(',').Distinct().ToList();
+                    this.BlockedFriends = MemberLoadReader.GetString("BlockedFriends").Split(',').Distinct().ToList();
+                    this.Friends = MemberLoadReader.GetString("Friends").Split(',').Distinct().ToList();
 
                     this.EmailVerified = MemberLoadReader.GetBoolean("EmailVerified");
                     this.RequestSecure = MemberLoadReader.GetBoolean("RequestSecure");

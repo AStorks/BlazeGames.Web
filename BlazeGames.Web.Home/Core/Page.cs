@@ -11,18 +11,51 @@ namespace BlazeGames.Web.Core
 {
     public class Page
     {
+        public const int CurrentPageVersion = 1;
+
         private CodeDomProvider CodeCompiler;
         private CompilerParameters CodeParameters;
 
         public string Url,
-            Domain,
-            Code;
+            Domain;
+
+        private string _Code,
+            _PageCSS,
+            _PageJS,
+            _PageHTML;
+
+        private bool CodeChanged = false;
+        public string Code
+        {
+            get { return _Code; }
+            set { if (_Code != value) { CodeChanged = true; } _Code = value; }
+        }
+
+        public string PageCSS
+        {
+            get { return _PageCSS; }
+            set { if (_PageCSS != value) { CodeChanged = true; } _PageCSS = value; }
+        }
+
+        public string PageJS
+        {
+            get { return _PageJS; }
+            set { if (_PageJS != value) { CodeChanged = true; } _PageJS = value; }
+        }
+
+        public string PageHTML
+        {
+            get { return _PageHTML; }
+            set { if (_PageHTML != value) { CodeChanged = true; } _PageHTML = value; }
+        }
 
         public string[] References;
-        
+
         public int ID,
             WarnLevel,
-            MinimumAuthorization;
+            MinimumAuthorization,
+            PageVersion,
+            IsEditing;
 
         public bool RequireSecure,
             InDev,
@@ -80,13 +113,17 @@ namespace BlazeGames.Web.Core
                 {
                     this.Url = PageLoadReader.GetString("Url");
                     this.Domain = PageLoadReader.GetString("Domain");
-                    this.Code = PageLoadReader.GetString("Code");
+                    this._Code = PageLoadReader.GetString("Code");
+                    this._PageCSS = PageLoadReader.GetString("PageCSS");
+                    this._PageJS = PageLoadReader.GetString("PageJS");
+                    this._PageHTML = PageLoadReader.GetString("PageHTML");
 
                     this.References = PageLoadReader.GetString("References").Split(',');
 
                     this.ID = PageLoadReader.GetInt32("ID");
                     this.WarnLevel = PageLoadReader.GetInt32("WarnLevel");
                     this.MinimumAuthorization = PageLoadReader.GetInt32("MinimumAuthorization");
+                    this.PageVersion = PageLoadReader.GetInt32("PageVersion");
 
                     this.RequireSecure = PageLoadReader.GetBoolean("RequireSecure");
                     this.InDev = PageLoadReader.GetBoolean("InDev");
@@ -94,12 +131,14 @@ namespace BlazeGames.Web.Core
                     this.HtmlPage = PageLoadReader.GetBoolean("HtmlPage");
                     this.Compiled = PageLoadReader.GetBoolean("Compiled");
                     this.Locked = PageLoadReader.GetBoolean("Locked");
+                    this.IsEditing = PageLoadReader.GetInt32("IsEditing");
 
                     this.CompiledCode = (byte[])PageLoadReader["CompiledCode"];
 
                     this.LastUpdate = PageLoadReader.GetDateTime("LastUpdate");
 
                     this.Exists = true;
+                    this.CodeChanged = false;
                 }
                 else
                 {
@@ -122,9 +161,10 @@ namespace BlazeGames.Web.Core
 
         public void Save()
         {
-            this.LastUpdate = DateTime.Now;
+            if(CodeChanged)
+                this.LastUpdate = DateTime.Now;
 
-            MySqlCommand PageSaveQuery = new MySqlCommand("UPDATE pages SET Url=@Url, Domain=@Domain, Code=@Code, `References`=@References, WarnLevel=@WarnLevel, MinimumAuthorization=@MinimumAuthorization, RequireSecure=@RequireSecure, InDev=@InDev, GenerateInMemory=@GenerateInMemory, HtmlPage=@HtmlPage, Compiled=@Compiled, CompiledCode=@CompiledCode, LastUpdate=@LastUpdate, Locked=@Locked WHERE ID=@ID", SqlConnection);
+            MySqlCommand PageSaveQuery = new MySqlCommand("UPDATE pages SET Url=@Url, Domain=@Domain, Code=@Code, `References`=@References, WarnLevel=@WarnLevel, MinimumAuthorization=@MinimumAuthorization, RequireSecure=@RequireSecure, InDev=@InDev, GenerateInMemory=@GenerateInMemory, HtmlPage=@HtmlPage, Compiled=@Compiled, CompiledCode=@CompiledCode, LastUpdate=@LastUpdate, Locked=@Locked, PageVersion=@PageVersion, PageCSS=@PageCSS, PageJS=@PageJS, PageHTML=@PageHTML, IsEditing=@IsEditing WHERE ID=@ID", SqlConnection);
 
             PageSaveQuery.Parameters.AddWithValue("@ID", this.ID);
             PageSaveQuery.Parameters.AddWithValue("@Url", this.Url);
@@ -141,6 +181,11 @@ namespace BlazeGames.Web.Core
             PageSaveQuery.Parameters.AddWithValue("@CompiledCode", this.CompiledCode);
             PageSaveQuery.Parameters.AddWithValue("@LastUpdate", this.LastUpdate);
             PageSaveQuery.Parameters.AddWithValue("@Locked", this.Locked);
+            PageSaveQuery.Parameters.AddWithValue("@PageVersion", this.PageVersion);
+            PageSaveQuery.Parameters.AddWithValue("@PageCSS", this.PageCSS);
+            PageSaveQuery.Parameters.AddWithValue("@PageJS", this.PageJS);
+            PageSaveQuery.Parameters.AddWithValue("@PageHTML", this.PageHTML);
+            PageSaveQuery.Parameters.AddWithValue("@IsEditing", this.IsEditing);
 
             PageSaveQuery.ExecuteNonQuery();
         }
@@ -187,21 +232,24 @@ namespace BlazeGames.Web.Core
             return null;
         }
 
-        public static Page Create(MySqlConnection SqlConnection, string Url, string Domain, string Code, string[] References, int MinimumAuthorization, bool RequireSecure)
+        public static Page Create(MySqlConnection SqlConnection, string Url, string Domain, string Code, string[] References, int MinimumAuthorization, bool RequireSecure, string PageCSS, string PageJS, string PageHTML)
         {
             if (!Url.StartsWith("/"))
                 Url = "/" + Url;
             if (!Url.EndsWith("/"))
                 if (!Url.EndsWith("%"))
                     Url = Url + "/";
-            MySqlCommand PageCreateQuery = new MySqlCommand(@"INSERT INTO pages (`Url`, `Code`, `References`, `WarnLevel`, `MinimumAuthorization`, `RequireSecure`, `InDev`, `GenerateInMemory`, `HtmlPage`, `Compiled`, `CompiledCode`, `LastUpdate`, `Locked`)
-VALUES (@Url, @Code, @References, 4, @MinimumAuthorization, @RequireSecure, 0, 0, 0, 0, 0, @LastUpdate, 0);", SqlConnection);
+            MySqlCommand PageCreateQuery = new MySqlCommand(@"INSERT INTO pages (`Url`, `Code`, `References`, `WarnLevel`, `MinimumAuthorization`, `RequireSecure`, `InDev`, `GenerateInMemory`, `HtmlPage`, `Compiled`, `CompiledCode`, `LastUpdate`, `Locked`, `PageCSS`, `PageJS`, `PageHTML`)
+VALUES (@Url, @Code, @References, 4, @MinimumAuthorization, @RequireSecure, 0, 0, 0, 0, 0, @LastUpdate, 0, @PageCSS, @PageJS, @PageHTML);", SqlConnection);
             PageCreateQuery.Parameters.AddWithValue("@Url", Url);
             PageCreateQuery.Parameters.AddWithValue("@Code", Code);
             PageCreateQuery.Parameters.AddWithValue("@References", String.Join(",", References));
             PageCreateQuery.Parameters.AddWithValue("@MinimumAuthorization", MinimumAuthorization);
             PageCreateQuery.Parameters.AddWithValue("@RequireSecure", RequireSecure);
             PageCreateQuery.Parameters.AddWithValue("@LastUpdate", DateTime.Now);
+            PageCreateQuery.Parameters.AddWithValue("@PageCSS", PageCSS);
+            PageCreateQuery.Parameters.AddWithValue("@PageJS", PageJS);
+            PageCreateQuery.Parameters.AddWithValue("@PageHTML", PageHTML);
 
             PageCreateQuery.ExecuteNonQuery();
             return new Page(Url, Domain, SqlConnection);
@@ -210,7 +258,6 @@ VALUES (@Url, @Code, @References, 4, @MinimumAuthorization, @RequireSecure, 0, 0
         public static string DefaultCode = @"using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Web;
 using BlazeGames.Web.Core;
 using MySql.Data.MySqlClient;
@@ -230,5 +277,12 @@ namespace BlazeGames.Web
         }
     }
 }";
+        public static string DefaultHTML = @"<div id='contents'><div id='main' class='container htmlpage'>
+    <!--{PageCode}-->
+</div></div>";
+
+        public static string DefaultCSS = @"";
+
+        public static string DefaultJS = @"";
     }
 }

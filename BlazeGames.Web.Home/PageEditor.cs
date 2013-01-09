@@ -6,6 +6,7 @@ using MySql.Data.MySqlClient;
 using System.CodeDom.Compiler;
 using BlazeGames;
 using System.Net.Mail;
+using System.Collections.Generic;
 
 namespace BlazeGames.Web
 {
@@ -14,90 +15,23 @@ namespace BlazeGames.Web
         public override void onPageInitialize()
         {
             HttpHead.AddCSS("https://blaze-games.com/codemirror/codemirror.css");
-            HttpHead.AddCSS("https://c326077.ssl.cf1.rackcdn.com/lesser-dark.css");
+            HttpHead.AddCSS("https://blaze-games.com/codemirror/ambiance.css");
+            HttpHead.AddCSS("https://blaze-games.com/codemirror/dialog.css");
             HttpHead.AddCSS("https://blaze-games.com/datatable/datatable.css");
             HttpHead.AddCSS("https://blaze-games.com/datatable/ui_custom.css");
 
             HttpHead.AddJS("https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js");
             HttpHead.AddJS("https://blaze-games.com/codemirror/codemirror.js");
             HttpHead.AddJS("https://blaze-games.com/codemirror/clike.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/css.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/xml.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/htmlmixed.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/javascript.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/continuecomment.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/dialog.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/search.js");
+            HttpHead.AddJS("https://blaze-games.com/codemirror/searchcursor.js");
             HttpHead.AddJS("https://blaze-games.com/datatable/datatable.js");
-
-            HttpHead.AddCSS(@".CodeMirror
-{
-	border: 1px solid #eee;
-}
-.CodeMirror-scroll
-{
-	height: auto;
-	overflow-y: auto;
-	overflow-x: auto;
-}
-.CodeMirror-fullscreen
-{
-    display: block;
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    z-index: 9999;
-}
-table.sortable thead
-{
-    background-color:#eee;
-    color:#666666;
-    font-weight: bold;
-    cursor: default;
-}");
-
-            HttpHead.AddJS(@"function isFullScreen(cm)
-{
-	return /\bCodeMirror-fullscreen\b/.test(cm.getWrapperElement().className);
-}
-
-function winHeight()
-{
-	return window.innerHeight || (document.documentElement || document.body).clientHeight;
-}
-
-function setFullScreen(cm, full)
-{
-	var wrap = cm.getWrapperElement(), scroll = cm.getScrollerElement();
-  
-	if (full)
-	{
-		wrap.className += "" CodeMirror-fullscreen"";
-		scroll.style.height = winHeight() + ""px"";
-		document.documentElement.style.overflow = ""hidden"";
-	}
-	else
-	{
-		wrap.className = wrap.className.replace("" CodeMirror-fullscreen"", """");
-		scroll.style.height = """";
-		document.documentElement.style.overflow = """";
-	}
-  
-	cm.refresh();
-}
-
-$(function() {
-oTable = $('.pagelist').dataTable(
-{
-    ""bJQueryUI"": true,
-	""sPaginationType"": ""full_numbers"",
-	""aoColumns"":
-    [
-	    null,
-        null,
-	    null,
-        {'iDataSort': 4},
-        {'bVisible': false},
-        null,
-        {'bSortable': false}
-    ],
-	""aaSorting"": [[ 3, ""desc"" ]],
-	});
-});
-");
 
             if (Utilities.POST("Act") == "GetInfo" && Utilities.POST("ID") != "")
             {
@@ -118,6 +52,34 @@ oTable = $('.pagelist').dataTable(
                 Http.Response.End();
             }
 
+            if (Utilities.POST("Act") == "CompileAll")
+            {
+                MySqlCommand PageFetchQuery = new MySqlCommand("SELECT ID FROM pages ORDER BY LastUpdate DESC", SqlConnection);
+                MySqlDataReader PageFetchReader = PageFetchQuery.ExecuteReader();
+                List<int> Pages = new List<int>();
+
+                while (PageFetchReader.Read())
+                {
+                    int ID = PageFetchReader.GetInt32("ID");
+                    Pages.Add(ID);
+                }
+
+                PageFetchReader.Close();
+
+                foreach (int PageID in Pages)
+                {
+                    Page page = new Page(PageID, SqlConnection);
+                    if(page.Locked)
+                        Http.Response.Write(PageID + " locked.\r\n");
+                    else if (page.Compile() == null)
+                        Http.Response.Write(PageID + " compiled.\r\n");
+                    else
+                        Http.Response.Write(PageID + " compile failed.\r\n");
+                }
+
+                Http.Response.End();
+            }
+
             if (Utilities.POST("Act") == "UpdatePage")
             {
                 try
@@ -127,19 +89,25 @@ oTable = $('.pagelist').dataTable(
                         Page EditPage = new Page(Convert.ToInt32(Utilities.POST("ID")), SqlConnection);
                         if (EditPage.Exists)
                         {
-                            EditPage.Url = Utilities.POST("Url").ToLower();
-                            EditPage.Domain = Utilities.POST("Domain").ToLower();
-                            EditPage.References = Utilities.POST("References").Split(',');
-                            EditPage.MinimumAuthorization = Convert.ToInt32(Utilities.POST("MinimumAuthorization"));
-                            EditPage.RequireSecure = Convert.ToBoolean(Utilities.POST("RequireSecure"));
-                            EditPage.Code = Utilities.POST("Code");
-
-                            Http.Response.Write("");
-
-                            if (EditPage.Compile() == null)
-                                Http.Response.Write("0");
+                            if (EditPage.IsEditing != LoggedInMember.ID)
+                                Http.Response.Write("4");
                             else
-                                Http.Response.Write("3");
+                            {
+                                EditPage.Url = Utilities.POST("Url").ToLower();
+                                EditPage.Domain = Utilities.POST("Domain").ToLower();
+                                EditPage.References = Utilities.POST("References").Split(',');
+                                EditPage.MinimumAuthorization = Convert.ToInt32(Utilities.POST("MinimumAuthorization"));
+                                EditPage.RequireSecure = Convert.ToBoolean(Utilities.POST("RequireSecure"));
+                                EditPage.Code = Utilities.POST("Code");
+                                EditPage.PageCSS = Utilities.POST("Code_CSS");
+                                EditPage.PageJS = Utilities.POST("Code_JS");
+                                EditPage.PageHTML = Utilities.POST("Code_HTML");
+
+                                if (EditPage.Compile() == null)
+                                    Http.Response.Write("0");
+                                else 
+                                    Http.Response.Write("3");
+                            }
                         }
                         else
                             Http.Response.Write("1");
@@ -157,7 +125,7 @@ oTable = $('.pagelist').dataTable(
             {
                 if (Utilities.POST("Url") != "" && Utilities.POST("References") != "" && Utilities.POST("MinimumAuthorization") != "" && Utilities.POST("RequireSecure") != "" && Utilities.POST("Code") != "")
                 {
-                    Page CreatedPage = Page.Create(SqlConnection, Utilities.POST("Url").ToLower(), Utilities.POST("Domain").ToLower(), Utilities.POST("Code"), Utilities.POST("References").Split(','), Convert.ToInt32(Utilities.POST("MinimumAuthorization")), Convert.ToBoolean(Utilities.POST("RequireSecure")));
+                    Page CreatedPage = Page.Create(SqlConnection, Utilities.POST("Url").ToLower(), Utilities.POST("Domain").ToLower(), Utilities.POST("Code"), Utilities.POST("References").Split(','), Convert.ToInt32(Utilities.POST("MinimumAuthorization")), Convert.ToBoolean(Utilities.POST("RequireSecure")), Utilities.POST("Code_CSS"), Utilities.POST("Code_JS"), Utilities.POST("Code_HTML"));
                     Http.Response.Write(CreatedPage.ID.ToString());
                 }
                 else
@@ -170,6 +138,18 @@ oTable = $('.pagelist').dataTable(
             {
                 Page DeletePage = new Page(Convert.ToInt32(Utilities.POST("ID")), SqlConnection);
                 DeletePage.Delete();
+                Http.Response.End();
+            }
+
+            if (Utilities.POST("Act") == "UnlockPage" && Utilities.POST("ID") != "")
+            {
+                Page EditPage = new Page(Convert.ToInt32(Utilities.POST("ID")), SqlConnection);
+                if (EditPage.Exists && EditPage.IsEditing != 0)
+                {
+                    EditPage.IsEditing = 0;
+                    EditPage.Save();
+                }
+
                 Http.Response.End();
             }
 
@@ -226,11 +206,10 @@ oTable = $('.pagelist').dataTable(
 
         public override void onPageLoad()
         {
-            echo("<h1>Welcome " + LoggedInMember.Nickname + "</h1>");
-            echo("<h3 style='margin-left:10px;'>There is currently " + Log.TotalVisitors() + " users viewing this website and " + Log.TotalMembers() + " registered members.</h3><br />");
-
             if (Utilities.GET("Compile") == "true")
             {
+                echo("<h1>Welcome " + LoggedInMember.Nickname + "</h1>");
+                echo("<h3 style='margin-left:10px;'>There is currently " + Log.TotalVisitors() + " users viewing this website and " + Log.TotalMembers() + " registered members.</h3><br />");
                 echo("<div style='float: right;'><a href='/Admin/Pages/'>Back</a></div><br /><br />");
                 int PageID = Convert.ToInt32(Utilities.GET("ID"));
                 Page EditPage = new Page(PageID, SqlConnection);
@@ -251,7 +230,21 @@ oTable = $('.pagelist').dataTable(
             }
             else if (Utilities.GET("NewPage") == "true")
             {
-                echo("<div style='float: right;'><a href='#' onclick='setFullScreen(editor, true);return false;'>Fullscreen</a> | <a href='#' onclick='CreatePage(); return false;'>Create</a> | <a href='/Admin/Pages/'>Quit</a></div><br /><br />");
+                echo(string.Format(@"<div class='boxcontainer'>
+	<span class='header'>Welcome, {0}</span>
+	
+	<span class='links'>
+		<a href='#' onclick='setFullScreen(editor, true);return false;'>Fullscreen</a>
+		<a href='#' onclick='CreatePage(); return false;'>Create</a>
+		<a href='/Admin/Pages/'>Quit</a>
+	</span>
+	
+	<br />
+	<br />
+	There is currently {1} users viewing the website and {2} registered members.
+</div>", LoggedInMember.Nickname, Log.TotalVisitors(), Log.TotalMembers()));
+
+                echo("<div class='boxcontainer'>");
                 echo("<a href='#' onclick='$(\".PageSettings\").animate({ height: \"toggle\" }); return false;'>Edit Settings</a><br /><span class='PageSettings'>");
                 echo("Page Url:<br /><input style='width:150px;' class='txtbar' type='text' id='Url' onkeypress='Edited();' onchange='Edited();' value='' /><br />");
                 echo("Page Domain:<br /><input style='width:150px;' class='txtbar' type='text' id='Domain' onkeypress='Edited();' onchange='Edited();' value='blaze-games.com' /><br />");
@@ -270,15 +263,46 @@ oTable = $('.pagelist').dataTable(
                 echo("</select><br /><br />");
                 //echo("HtmlPage: <input style='width:200px;' class='txtbar' type='text' name='' value='" + EditPage.HtmlPage + "' /><br />");
                 echo("Page Code:<br /></span>");
-                echo(Utilities.CodeMirror("maincode", Page.DefaultCode, "text/x-csharp"));
+                echo(Utilities.CodeMirror("maincode", Page.DefaultCode, "text/x-csharp", true, "ambiance"));
+                echo("Page CSS:<br />");
+                echo(Utilities.CodeMirror("csscode", Page.DefaultCSS, "text/css", false, "ambiance"));
+                echo("Page Javascript:<br />");
+                echo(Utilities.CodeMirror("jscode", Page.DefaultJS, "text/javascript", false, "ambiance"));
+                echo("Page Html:<br />");
+                echo(Utilities.CodeMirror("htmlcode", Page.DefaultHTML, "text/html", false, "ambiance"));
+                echo("</div>");
             }
             else if (Utilities.GET("EditPage") == "true" && Utilities.GET("ID") != "")
             {
                 int PageID = Convert.ToInt32(Utilities.GET("ID"));
                 Page EditPage = new Page(PageID, SqlConnection);
-                echo("<div style='float: right;'><a href='#' onclick='setFullScreen(editor, true);return false;'>Fullscreen</a> | <a href='#' onclick='DeletePage(" + EditPage.ID + "); return false;'>Delete</a> | <a href='#' onclick='CompilePage(false); return false;'>Compile</a> | <a href='#' onclick='CompilePage(true); return false;'>Compile And Quit</a> | <a href='/Admin/Pages/'>Quit</a></div><br /><br />");
+
+                if (EditPage.IsEditing == 0)
+                {
+                    EditPage.IsEditing = LoggedInMember.ID;
+                    EditPage.Save();
+                }
+
+                echo(string.Format(@"<div class='boxcontainer'>
+	<span class='header'>Welcome, {0}</span>
+	
+	<span class='links'>
+		<a href='#' onclick='setFullScreen(editor, true);return false;'>Fullscreen</a>
+        <a href='#' onclick='UnlockPageNoRedirect({3}); return false;'>Unlock</a>
+		<a href='#' onclick='DeletePage({3}); return false;'>Delete</a>
+		<a href='#' onclick='CompilePage(false); return false;'>Compile</a>
+		<a href='#' onclick='CompilePage(true); return false;'>Compile And Quit</a>
+		<a href='/Admin/Pages/'>Quit</a>
+	</span>
+	
+	<br />
+	<br />
+	There is currently {1} users viewing the website and {2} registered members.
+</div>", LoggedInMember.Nickname, Log.TotalVisitors(), Log.TotalMembers(), EditPage.ID));
+
                 if (EditPage.Exists)
                 {
+                    echo("<div class='boxcontainer'>");
                     echo("<a href='#' onclick='$(\".PageSettings\").animate({ height: \"toggle\" }); return false;'>Edit Settings</a><br /><span class='PageSettings'>");
                     echo("<span style='display:none;' id='ID'>" + EditPage.ID + "</span>");
                     echo("Page Url:<br /><input style='width:150px;' class='txtbar' type='text' id='Url' onkeypress='Edited();' onchange='Edited();' value='" + EditPage.Url + "' /><br />");
@@ -294,20 +318,38 @@ oTable = $('.pagelist').dataTable(
                     echo("</select><br /><br />");
                     //echo("HtmlPage: <input style='width:200px;' class='txtbar' type='text' name='' value='" + EditPage.HtmlPage + "' /><br />");
                     echo("Page Code:<br /></span>");
-                    echo(Utilities.CodeMirror("maincode", EditPage.Code, "text/x-csharp"));
+                    echo(Utilities.CodeMirror("maincode", EditPage.Code, "text/x-csharp", true, "ambiance"));
+                    echo("Page CSS:<br />");
+                    echo(Utilities.CodeMirror("csscode", EditPage.PageCSS, "text/css", false, "ambiance"));
+                    echo("Page Javascript:<br />");
+                    echo(Utilities.CodeMirror("jscode", EditPage.PageJS, "text/javascript", false, "ambiance"));
+                    echo("Page Html:<br />");
+                    echo(Utilities.CodeMirror("htmlcode", EditPage.PageHTML, "text/html", false, "ambiance"));
                     echo("</form><script>$('.PageSettings').animate({ height: 'toggle' });</script>");
+                    echo("</div>");
                 }
                 else
-                    echo("Unable to find the page you want to edit.");
+                    echo("<div class='boxcontainer'>Unable to find the page you want to edit.</div>");
             }
             else
             {
+                echo(string.Format(@"<div class='boxcontainer'>
+	<span class='header'>Welcome, {0}</span>
+	
+	<span class='links'>
+		<a href='/Admin/'>Admin Home</a>
+		<a href='/Admin/Pages/NewPage/'>New Page</a>
+        <a href='#' onclick='CompileAll(); return false;'>Compile All Pages</a>
+	</span>
+	
+	<br />
+	<br />
+	There is currently {1} users viewing the website and {2} registered members.
+</div>", LoggedInMember.Nickname, Log.TotalVisitors(), Log.TotalMembers()));
+
                 MySqlCommand PageFetchQuery = new MySqlCommand("SELECT * FROM pages ORDER BY LastUpdate DESC", SqlConnection);
                 MySqlDataReader PageFetchReader = PageFetchQuery.ExecuteReader();
-
-                echo("<div style='float: right;'><a href='/Admin/'>Admin Home</a> | <a href='./NewPage/'>New Page</a></div><br /><br />");
-                echo("<style type='text/css'>.table_row:hover{ background-color:#CCCCCC; }</style>");
-                echo("<table style='width:100%;' class='display pagelist'><thead><tr><th>ID</th><th>Domain</th><th>Url</th><th>Last Update</th><th>Update Sort</th><th>Auth</th><th>Delete</th></tr></thead><tbody>");
+                List<object[]> Pages = new List<object[]>();
 
                 while (PageFetchReader.Read())
                 {
@@ -317,13 +359,48 @@ oTable = $('.pagelist').dataTable(
                     DateTime Updated = PageFetchReader.GetDateTime("LastUpdate");
                     TimeSpan LastUpdate = DateTime.Now - Updated;
                     int MinimumAuthorization = PageFetchReader.GetInt32("MinimumAuthorization");
+                    int PageVersion = PageFetchReader.GetInt32("PageVersion");
+                    int IsEditing = PageFetchReader.GetInt32("IsEditing");
 
-                    echo("<tr class='table_row' style='cursor:pointer;'><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + ID + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + Domain + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + Url + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + Utilities.GetTimeSpan(LastUpdate) + "</td><td>" + Utilities.GetSortableDate(Updated) + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + MinimumAuthorization + "</td><td onclick='DeletePage(" + ID + ");'>Delete</td></tr>");
+                    Pages.Add(new object[] { ID, Url, Domain, Updated, MinimumAuthorization, PageVersion, IsEditing });
                 }
 
-                echo("</tbody></table>");
-
                 PageFetchReader.Close();
+
+                echo("<style type='text/css'>.table_row:hover{ background-color:#CCCCCC; }</style>"); 
+                echo("<div class='boxcontainer'><br /><br /><table style='width:100%;' class='display pagelist'><thead><tr><th>ID</th><th>Domain</th><th>Url</th><th>Last Update</th><th>Update Sort</th><th>Auth</th><th>Locked To</th></tr></thead><tbody>");
+
+                foreach (object[] PageObj in Pages)
+                {
+                    int ID = Convert.ToInt32(PageObj[0]);
+                    string Url = PageObj[1] as string;
+                    string Domain = PageObj[2] as string;
+                    DateTime Updated = Convert.ToDateTime(PageObj[3]);
+                    TimeSpan LastUpdate = DateTime.Now - Updated;
+                    int MinimumAuthorization = Convert.ToInt32(PageObj[4]);
+                    int PageVersion = Convert.ToInt32(PageObj[5]);
+                    int IsEditing = Convert.ToInt32(PageObj[6]);
+                    string LockedBy = "Unlocked";
+
+                    if (IsEditing > 0)
+                    {
+                        Member LockedByMember = new Member(IsEditing, SqlConnection);
+                        LockedBy = LockedByMember.FirstName + " " + LockedByMember.LastName;
+                    }
+
+                    string RowStyle = "";
+                    if (IsEditing > 0)
+                        RowStyle = "background-color:#DCECF2;";
+                    else if (PageVersion != Page.CurrentPageVersion)
+                        RowStyle = "background-color:#EAE7D3;";
+
+                    if (IsEditing != 0 && IsEditing != LoggedInMember.ID)
+                        echo("<tr class='table_row' pageid='" + ID + "' style='" + RowStyle + "'><td>" + ID + "</td><td>" + Domain + "</td><td>" + Url + "</td><td>" + Utilities.GetTimeSpan(LastUpdate) + "</td><td>" + Utilities.GetSortableDate(Updated) + "</td><td>" + MinimumAuthorization + "</td><td>" + LockedBy + "</td></tr>");
+                    else
+                        echo("<tr class='table_row' pageid='" + ID + "' style='cursor:pointer;" + RowStyle + "'><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + ID + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + Domain + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + Url + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + Utilities.GetTimeSpan(LastUpdate) + "</td><td>" + Utilities.GetSortableDate(Updated) + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + MinimumAuthorization + "</td><td onclick=\"window.location='./EditPage/ID-" + ID + "/';\">" + LockedBy + "</td></tr>");
+                }
+
+                echo("</tbody></table></div>");
             }
         }
     }
